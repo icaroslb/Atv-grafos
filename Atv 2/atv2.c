@@ -7,6 +7,11 @@ typedef struct Arv{
 	struct Arv *maior, *menor, *pai;
 } arv;
 
+typedef struct Viz{
+	int val;
+	struct Viz *prox;
+}viz;
+
 typedef struct Grafo{
 	int val, quant;
 	viz *prox;
@@ -21,8 +26,9 @@ void retiArv(arv *);
 int main(){
 	int quant, x, y, inseridos = 0;
 	float peso, resul = 0;
-	grafo **graf, *aux;
+	grafo **graf, *aux, *libe;
 	arv *arvo = NULL, *novo, *ant;
+	viz *vizProx, *auxViz;
 	
 	while(!scanf("n=%d", &quant)){getchar();}
 	while(getchar() != ':'){}
@@ -45,26 +51,49 @@ int main(){
 	while(novo->menor != NULL){
 		novo = novo->menor;
 	}
-	
+	quant -= 1;
 	while(inseridos < quant){
 		x = novo->x;
 		y = novo->y;
 		peso = novo->peso;
-		//printf("%d %d %.1f\n", graf[x].val, graf[y].val, resul + peso);
-		/*if(graf[x]->val != graf[y]->val){
+		if(graf[x]->val != graf[y]->val){
 			printf("%d %d %d %d\n", graf[x]->val, graf[y]->val, x, y);
 			resul = resul + peso;
-			graf[x]->quant += graf[y]->quant;
-			aux = graf[y];
-			graf[y] = graf[x];
-			free(aux);
-			printf("%d %d %d %d\n\n", graf[x]->val, graf[y]->val, x, y);
-			//inseridos += 1;
-		}*/
+			if(graf[x]->quant >= graf[y]->quant){
+				vizProx = graf[y]->prox;
+				graf[x]->quant += graf[y]->quant;
+				libe = graf[y];
+				while(vizProx != NULL){
+					printf("%d\n", vizProx->val);
+					graf[vizProx->val] = graf[x];
+					if(vizProx->prox == NULL){
+						auxViz = vizProx;
+					}
+					vizProx = vizProx->prox;
+				}
+				auxViz->prox = graf[x]->prox;
+				graf[x]->prox = libe->prox;
+			}else{
+				vizProx = graf[x]->prox;
+				graf[y]->quant += graf[x]->quant;
+				libe = graf[x];
+				while(vizProx != NULL){
+					printf("%d\n", vizProx->val);
+					graf[vizProx->val] = graf[y];
+					if(vizProx->prox == NULL){
+						auxViz = vizProx;
+					}
+					vizProx = vizProx->prox;
+				}
+				auxViz->prox = graf[y]->prox;
+				graf[y]->prox = libe->prox;
+			}
+			free(libe);
+			inseridos += 1;
+		}
 		ant = novo;
 		novo = proxArv(novo);
 		retiArv(ant);
-		inseridos += 1;
 	}
 	printf("%.1f\n", resul);
 	return EXIT_SUCCESS;
@@ -72,12 +101,17 @@ int main(){
 
 grafo** iniGrafo(int quant){
 	grafo **graf, *aux;
+	viz *vert;
 	
 	graf = (grafo**)malloc(sizeof(grafo)*quant);
 	for(int i = 0; i < quant; i++){
 		aux = (grafo*)malloc(sizeof(graf));
 		aux->val = i;
-		aux->quant = 0;
+		aux->quant = 1;
+		vert = (viz*)malloc(sizeof(viz));
+		vert->val = i;
+		vert->prox = NULL;
+		aux->prox = vert;
 		graf[i] = aux;
 	}
 	return graf;
