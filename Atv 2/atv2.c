@@ -57,14 +57,12 @@ int main(){
 		y = novo->y;
 		peso = novo->peso;
 		if(graf[x]->val != graf[y]->val){
-			printf("%d %d %d %d\n", graf[x]->val, graf[y]->val, x, y);
 			resul = resul + peso;
 			if(graf[x]->quant >= graf[y]->quant){
 				vizProx = graf[y]->prox;
 				graf[x]->quant += graf[y]->quant;
 				libe = graf[y];
 				while(vizProx != NULL){
-					printf("%d\n", vizProx->val);
 					graf[vizProx->val] = graf[x];
 					if(vizProx->prox == NULL){
 						auxViz = vizProx;
@@ -78,7 +76,6 @@ int main(){
 				graf[y]->quant += graf[x]->quant;
 				libe = graf[x];
 				while(vizProx != NULL){
-					printf("%d\n", vizProx->val);
 					graf[vizProx->val] = graf[y];
 					if(vizProx->prox == NULL){
 						auxViz = vizProx;
