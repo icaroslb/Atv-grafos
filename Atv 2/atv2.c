@@ -3,6 +3,7 @@
 
 typedef struct Arv{
 	float peso;
+	int fator;
 	int x, y;
 	struct Arv *maior, *menor, *pai;
 } arv;
@@ -19,9 +20,15 @@ typedef struct Grafo{
 
 
 grafo** iniGrafo(int);
-void adiArv(arv **, arv *);
+void adicionar(arv **, arv *);
+void corrigirArvore(arv *, arv **);
+void rotacaoDuplaDireita(arv *, arv *, arv **);
+void rotacaoDuplaEsquerda(arv *, arv *, arv **);
+void rotacaoDireita(arv *, arv **);
+void rotacaoEsquerda(arv *, arv **);
+/*void adiArv(arv **, arv *);
 arv* proxArv(arv *);
-void retiArv(arv *);
+void retiArv(arv *);*/
 
 int main(){
 	int quant, x, y, inseridos = 0;
@@ -92,7 +99,7 @@ int main(){
 		novo = proxArv(novo);
 		retiArv(ant);
 	}
-	printf("%.1f\n", resul);
+	printf("%.3f\n", resul);
 	return EXIT_SUCCESS;
 }
 
@@ -114,7 +121,110 @@ grafo** iniGrafo(int quant){
 	return graf;
 }
 
-void adiArv(arv ** arvo, arv *novo){	
+void adicionar(arv **raiz, arv *novo){
+
+	if(*raiz == NULL){
+		*raiz = novo;
+	}else{
+		arv *perco = NULL, *prox = *raiz;
+		
+		//Percorre a árvore para achar uma posição para colocar o novo nó
+		while(prox != NULL){
+			perco = prox;
+			if(novo->peso > prox->peso){
+				perco = prox->maior;
+			}else{
+				perco = prox->menor;
+			}
+		}
+		
+		//Coloca o novo nó
+		if(novo->peso > perco->peso){
+			perco->maior = novo;
+			perco->fator += 1;
+		}else{
+			perco->menor = novo;
+			perco->fator -= 1;
+		}
+		
+		//Corrige a árvore
+		corrigirArvore(perco, raiz);
+	}
+}
+
+void corrigirArvore(arv *perco, arv **raiz){
+	while(perco != NULL){
+		if(perco->fator > 1){
+			if(perco->menor != NULL && (perco->menor)->fator < 0){
+				rotacaoDuplaEsquerda(perco, perco->maior, raiz);
+			}else{
+				rotacaoEsquerda(perco, raiz);
+			}
+		}else{
+			if(perco->maior != NULL && (perco->maior)->fator > 0){
+				rotacaoDuplaDireita(perco, perco->menor, raiz);
+			}else{
+				rotacaoDireita(perco, raiz);
+			}
+		}
+		perco = perco->pai;
+	}
+}
+
+void rotacaoDuplaEsquerda(arv *atual, arv *fMaior, arv **raiz){
+	rotacaoDireita(fMaior, raiz);
+	rotacaoEsquerda(atual, raiz);
+}
+
+void rotacaoDuplaDireita(arv *atual, arv *fMenor, arv **raiz){
+	rotacaoEsquerda(fMenor, raiz);
+	rotacaoDireita(atual, raiz);
+}
+
+void rotacaoDireita(arv *atual, arv **raiz){
+	arv *aux;
+	
+	(atual->menor)->pai = atual->pai;
+	if(atual->pai == NULL){
+		*raiz = atual->menor;
+	}else{
+		aux = atual->pai;
+		if(aux->peso > (atual->menor)->peso){
+			aux->maior = atual->menor;
+		}else{
+			aux->menor = atual->menor;
+		}
+	}
+	aux = atual->menor;
+	atual->menor = aux->maior;
+	if(atual->menor != NULL){
+		(atual->menor)->pai = atual;
+	}
+	aux->maior = atual;
+}
+
+void rotacaoEsquerda(arv *atual, arv **raiz){
+	arv *aux;
+	
+	(atual->maior)->pai = atual->pai;
+	if(atual->pai == NULL){
+		*raiz = atual->maior;
+	}else{
+		aux = atual->pai;
+		if(aux->peso > (atual->maior)->peso){
+			aux->maior = atual->maior;
+		}else{
+			aux->menor = atual->maior;
+		}
+	}
+	aux = atual->maior;
+	atual->maior = aux->menor;
+	if(atual->maior != NULL){
+		(atual->maior)->pai = atual;
+	}
+	aux->menor = atual;
+}
+/*void adiArv(arv ** arvo, arv *novo){	
 	if(*arvo == NULL){
 		*arvo = novo;
 		novo->pai = NULL;
@@ -173,4 +283,4 @@ void retiArv(arv *reti){
 	}
 	
 	free(reti);
-}
+}*/
