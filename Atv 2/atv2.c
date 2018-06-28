@@ -1,286 +1,179 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-typedef struct Arv{
-	float peso;
-	int fator;
-	int x, y;
-	struct Arv *maior, *menor, *pai;
-} arv;
+typedef struct Aresta {
+	int x, y, pos;
+	double peso;
+}aresta;
 
-typedef struct Viz{
-	int val;
-	struct Viz *prox;
-}viz;
+typedef struct Vertice {
+	int pos;
+	double peso;
+	aresta *naHeap;
+}vertice;
 
-typedef struct Grafo{
-	int val, quant;
-	viz *prox;
-} grafo;
+typedef struct Heap {
+	aresta **h;
+	int quant;
+}heap;
 
+typedef struct Grafo {
+	int x;
+	double peso;
+	struct Grafo *prox;
+}grafo;
 
-grafo** iniGrafo(int);
-void adicionar(arv **, arv *);
-void corrigirArvore(arv *, arv **);
-void rotacaoDuplaDireita(arv *, arv *, arv **);
-void rotacaoDuplaEsquerda(arv *, arv *, arv **);
-void rotacaoDireita(arv *, arv **);
-void rotacaoEsquerda(arv *, arv **);
-/*void adiArv(arv **, arv *);
-arv* proxArv(arv *);
-void retiArv(arv *);*/
+void inserirHeap (heap *, aresta *, vertice *);
+aresta* removerHeap (heap *, vertice *);
+void subirHeap(heap *, int, vertice *);
+void descerHeap(heap *, int, vertice *);
+void trocar(heap *, int, int, vertice *);
 
-int main(){
-	int quant, x, y, inseridos = 0;
-	float peso, resul = 0;
-	grafo **graf, *aux, *libe;
-	arv *arvo = NULL, *novo, *ant;
-	viz *vizProx, *auxViz;
+int main () {
+	int quant, x, y;
+	double peso, final;
+	heap *h;
+	vertice *v;
+	grafo *g, *aux;
+	aresta *ares, *novaAres;
 	
 	while(!scanf("n=%d", &quant)){getchar();}
 	while(getchar() != ':'){}
 	getchar();
 	
-	graf = iniGrafo(quant);
+	h = (heap*)malloc(sizeof(heap));
+	h->h = (aresta**)malloc(sizeof(aresta*)*(quant+1));
+	h->quant = 0;
 	
-	while(scanf("%d %d %f", &x, &y, &peso) != EOF){
-		novo = (arv*)malloc(sizeof(arv));
-		novo->peso = peso;
-		novo->x = x-1;
-		novo->y = y-1;
-		novo->pai = NULL;
-		novo->menor = NULL;
-		novo->maior = NULL;
-		adiArv(&arvo, novo);
+	v = (vertice*)malloc(sizeof(vertice)*(quant+1));
+	g = (grafo*)malloc(sizeof(grafo)*(quant+1));
+	for(int i = 0; i < (quant+1); i++){
+		v[i].pos = -1;
+		v[i].peso = INFINITY;
+		v[i].naHeap = NULL;
+		
+		g[i].x = i;
+		g[i].prox = NULL;
 	}
 	
-	novo = arvo;
-	while(novo->menor != NULL){
-		novo = novo->menor;
+	while(scanf("%d %d %lf", &x, &y, &peso) != EOF){
+		aux = (grafo*)malloc(sizeof(grafo));
+		aux->x = y;
+		aux->peso = peso;
+		aux->prox = g[x].prox;
+		g[x].prox = aux;
+		
+		aux = (grafo*)malloc(sizeof(grafo));
+		aux->x = x;
+		aux->peso = peso;
+		aux->prox = g[y].prox;
+		g[y].prox = aux;
 	}
-	quant -= 1;
-	while(inseridos < quant){
-		x = novo->x;
-		y = novo->y;
-		peso = novo->peso;
-		if(graf[x]->val != graf[y]->val){
-			resul = resul + peso;
-			if(graf[x]->quant >= graf[y]->quant){
-				vizProx = graf[y]->prox;
-				graf[x]->quant += graf[y]->quant;
-				libe = graf[y];
-				while(vizProx != NULL){
-					graf[vizProx->val] = graf[x];
-					if(vizProx->prox == NULL){
-						auxViz = vizProx;
+	
+	ares = (aresta*)malloc(sizeof(aresta));
+	ares->x = 1;
+	ares->y = 1;
+	ares->peso = 0.0;
+	inserirHeap(h, ares, v);
+	final = 0.0;
+	
+	while(h->quant > 0){
+		ares = removerHeap(h, v);
+		x = ares->y;
+		v[x].peso = ares->peso;
+		final += ares->peso;
+		aux = g+x;
+		while(aux->prox != NULL){
+			aux = aux->prox;
+			y = aux->x;
+			peso = aux->peso;
+			if(v[y].peso == INFINITY){
+				if(v[y].naHeap == NULL){
+					novaAres = (aresta*)malloc(sizeof(aresta));
+					novaAres->x = x;
+					novaAres->y = y;
+					novaAres->peso = peso;
+					v[y].naHeap = novaAres;
+					inserirHeap(h, novaAres, v);
+				}else{
+					if((v[y].naHeap)->peso > peso){
+						(v[y].naHeap)->peso = peso;
+						(v[y].naHeap)->x = x;
+						subirHeap(h, v[y].pos, v);
 					}
-					vizProx = vizProx->prox;
 				}
-				auxViz->prox = graf[x]->prox;
-				graf[x]->prox = libe->prox;
-			}else{
-				vizProx = graf[x]->prox;
-				graf[y]->quant += graf[x]->quant;
-				libe = graf[x];
-				while(vizProx != NULL){
-					graf[vizProx->val] = graf[y];
-					if(vizProx->prox == NULL){
-						auxViz = vizProx;
-					}
-					vizProx = vizProx->prox;
-				}
-				auxViz->prox = graf[y]->prox;
-				graf[y]->prox = libe->prox;
 			}
-			free(libe);
-			inseridos += 1;
 		}
-		ant = novo;
-		novo = proxArv(novo);
-		retiArv(ant);
+		
 	}
-	printf("%.3f\n", resul);
+	printf("%.3lf\n", final);
+	
 	return EXIT_SUCCESS;
 }
 
-grafo** iniGrafo(int quant){
-	grafo **graf, *aux;
-	viz *vert;
-	
-	graf = (grafo**)malloc(sizeof(grafo)*quant);
-	for(int i = 0; i < quant; i++){
-		aux = (grafo*)malloc(sizeof(graf));
-		aux->val = i;
-		aux->quant = 1;
-		vert = (viz*)malloc(sizeof(viz));
-		vert->val = i;
-		vert->prox = NULL;
-		aux->prox = vert;
-		graf[i] = aux;
-	}
-	return graf;
+void inserirHeap (heap *h, aresta *novo, vertice *v) {
+	h->quant += 1;
+	novo->pos = h->quant;
+	v[novo->y].pos = h->quant;
+	(h->h)[h->quant] = novo;
+	subirHeap(h, h->quant, v);
 }
 
-void adicionar(arv **raiz, arv *novo){
+aresta* removerHeap (heap *h, vertice *v) {
+	aresta *liberar = (h->h)[1];
+	
+	(h->h)[1] = (h->h)[h->quant];
+	h->quant -= 1;
+	descerHeap(h, 1, v);
+	
+	return liberar;
+}
 
-	if(*raiz == NULL){
-		*raiz = novo;
+void subirHeap(heap *h, int pos, vertice *v){
+	if(pos == 1){
+		return;
 	}else{
-		arv *perco = NULL, *prox = *raiz;
+		int pai = pos/2;
 		
-		//Percorre a árvore para achar uma posição para colocar o novo nó
-		while(prox != NULL){
-			perco = prox;
-			if(novo->peso > prox->peso){
-				perco = prox->maior;
-			}else{
-				perco = prox->menor;
-			}
+		if(((h->h)[pai])->peso > ((h->h)[pos])->peso){
+			trocar(h, pos, pai, v);
+			subirHeap(h, pai, v);
 		}
+	}
+}
+
+void descerHeap(heap *h, int pos, vertice *v){
+	if(pos > h->quant){
+		return;
+	}else{
+		int p = pos, e = pos*2, d = (pos*2)+1, menor;
 		
-		//Coloca o novo nó
-		if(novo->peso > perco->peso){
-			perco->maior = novo;
-			perco->fator += 1;
+		if(e < h->quant && ((h->h)[p])->peso > ((h->h)[e])->peso){
+			menor = e;
 		}else{
-			perco->menor = novo;
-			perco->fator -= 1;
+			menor = p;
 		}
-		
-		//Corrige a árvore
-		corrigirArvore(perco, raiz);
-	}
-}
-
-void corrigirArvore(arv *perco, arv **raiz){
-	while(perco != NULL){
-		if(perco->fator > 1){
-			if(perco->menor != NULL && (perco->menor)->fator < 0){
-				rotacaoDuplaEsquerda(perco, perco->maior, raiz);
-			}else{
-				rotacaoEsquerda(perco, raiz);
-			}
+		if(d < h->quant && ((h->h)[menor])->peso > ((h->h)[d])->peso){
+			menor = d;
+		}
+		if(menor == p){
+			return;
 		}else{
-			if(perco->maior != NULL && (perco->maior)->fator > 0){
-				rotacaoDuplaDireita(perco, perco->menor, raiz);
-			}else{
-				rotacaoDireita(perco, raiz);
-			}
-		}
-		perco = perco->pai;
-	}
-}
-
-void rotacaoDuplaEsquerda(arv *atual, arv *fMaior, arv **raiz){
-	rotacaoDireita(fMaior, raiz);
-	rotacaoEsquerda(atual, raiz);
-}
-
-void rotacaoDuplaDireita(arv *atual, arv *fMenor, arv **raiz){
-	rotacaoEsquerda(fMenor, raiz);
-	rotacaoDireita(atual, raiz);
-}
-
-void rotacaoDireita(arv *atual, arv **raiz){
-	arv *aux;
-	
-	(atual->menor)->pai = atual->pai;
-	if(atual->pai == NULL){
-		*raiz = atual->menor;
-	}else{
-		aux = atual->pai;
-		if(aux->peso > (atual->menor)->peso){
-			aux->maior = atual->menor;
-		}else{
-			aux->menor = atual->menor;
-		}
-	}
-	aux = atual->menor;
-	atual->menor = aux->maior;
-	if(atual->menor != NULL){
-		(atual->menor)->pai = atual;
-	}
-	aux->maior = atual;
-}
-
-void rotacaoEsquerda(arv *atual, arv **raiz){
-	arv *aux;
-	
-	(atual->maior)->pai = atual->pai;
-	if(atual->pai == NULL){
-		*raiz = atual->maior;
-	}else{
-		aux = atual->pai;
-		if(aux->peso > (atual->maior)->peso){
-			aux->maior = atual->maior;
-		}else{
-			aux->menor = atual->maior;
-		}
-	}
-	aux = atual->maior;
-	atual->maior = aux->menor;
-	if(atual->maior != NULL){
-		(atual->maior)->pai = atual;
-	}
-	aux->menor = atual;
-}
-/*void adiArv(arv ** arvo, arv *novo){	
-	if(*arvo == NULL){
-		*arvo = novo;
-		novo->pai = NULL;
-	}else{
-		arv *aux = *arvo, *ant = NULL;
-		
-		while(aux != NULL){
-			ant = aux;
-			if(novo->peso < aux->peso){
-				aux = aux->menor;
-			}else{
-				aux = aux->maior;
-			}
-		}
-		
-		novo->pai = ant;
-		if(novo->peso < ant->peso){
-			ant->menor = novo;
-		}else{
-			ant->maior = novo;
+			trocar(h, p, menor, v);
+			descerHeap(h, menor, v);
 		}
 	}
 }
 
-arv* proxArv(arv *ant){
-	arv *aux;
+void trocar(heap *h, int pos1, int pos2, vertice *v){
+	aresta *aux = (h->h)[pos1];
 	
-	if(ant->maior != NULL){
-		ant = ant->maior;
-		while(ant->menor != NULL){
-			ant = ant->menor;
-		}
-	}else{
-		aux = ant->pai;
-		while(aux != NULL && aux->maior == ant){
-			ant = aux;
-			aux = aux->pai;
-		}
-		if(aux != NULL){
-			ant = aux;
-		}
-	}
+	(h->h)[pos1] = (h->h)[pos2];
+	((h->h)[pos1])->pos = pos1;
+	(h->h)[pos2] = aux;
+	((h->h)[pos2])->pos = pos2;
 	
-	
-	return ant;
+	v[((h->h)[pos1])->y].pos = pos1;
+	v[((h->h)[pos2])->y].pos = pos2;
 }
-
-void retiArv(arv *reti){	
-	if(reti->pai != NULL){
-		(reti->pai)->menor = reti->maior;
-		if(reti->maior != NULL){
-			(reti->maior)->pai = reti->pai;
-		}
-	}else{
-		(reti->maior)->pai = NULL;
-	}
-	
-	free(reti);
-}*/
